@@ -4,42 +4,55 @@
 #include <fcntl.h>
 #include <string.h>
 #include <windows.h>
-HANDLE mutex;
+
+#include <stdio.h>
+// #include <errno.h>
+//#include <string.h>
 
 int main(int argc, char *argv[])
 {
-    mutex = CreateMutex(NULL,0,"SynchMutex");
-    if(mutex==NULL) write(2,"Mutex creation failed!\n",strlen("Mutex creation failed!\n"));
-    char* c;
+	char* c;
+	//int i=5;
+	int ul;
+	int descriptor;
+	int r;
 
-    do
-    {
-        WaitForSingleObject(mutex,INFINITE);
+	do
+	{
+		do
+		{
+			descriptor = open("warehouse.txt", O_RDONLY);
+		} while (descriptor < 0);
+		//printf("descriptor: %d\n", descriptor);
 
-        //1.otwórz plik
-        int descriptor = open("warehouse.txt",O_RDONLY);
-        if(descriptor<0) write(2,"Creation file error\n",strlen("Creation file error\n"));
+		//2.odczytaj znak z pliku
+		do
+		{
+			r = read(descriptor, c, 1);
+		} while (r == 0);
 
-        //2.odczytaj znak z pliku
-        int r = read(descriptor,c,1);
-        if(r<0) write(2,"Read file error\n",strlen("Read file error\n"));
+		//write(2,"Read file error\n",strlen("Read file error\n"));
+			//3.wypisz na stdout
+		int w = write(1, c, 1);
+		if (w < 0) write(2, "Write stdout error\n", strlen("Write stdout error\n"));
 
-        //3.wypisz na stdout
-        int w = write(1,c,1);
-        if(w<0) write(2,"Write stdout error\n",strlen("Write stdout error\n"));
+		//4.zamknij plik
+		int cl = close(descriptor);
+		if (cl < 0) write(2, "Close file error\n", strlen("Close file error\n"));
 
-        //4.zamknij plik
-        int cl = close(descriptor);
-        if(cl<0) write(2,"Close file error\n",strlen("Close file error\n"));
+		//5.usuń plik
+		do
+		{
+			ul = unlink("warehouse.txt");
+		} while (ul < 0);
+		//printf("ul: %d\n",ul);
+		//return 0;
 
-        //5.usuń plik
-        int ul = unlink("warehouse.txt");
-        if(cl<0) write(2,"Unlink file error\n",strlen("Unlink file error\n"));
+		//if(ul<0) write(2,"Unlink file error\n",strlen("Unlink file error\n"));
+		//while(ul<0) ul = unlink("warehouse.txt");
+	//i--;
+  //}while(i>0);
+	} while (*c != '*');
 
-        _Bool succeed = ReleaseMutex(mutex);
-        if(succeed==0) write(2,"Mutex release failed!\n",strlen("Mutex release failed!\n"));
-    }while(*c !='*');
-
-    CloseHandle(mutex);
-    return 0;
+	return 0;
 }
